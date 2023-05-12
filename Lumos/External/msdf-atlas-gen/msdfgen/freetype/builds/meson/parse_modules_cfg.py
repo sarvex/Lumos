@@ -48,12 +48,8 @@ def parse_modules_cfg(input_file):
             continue
 
         items = line.split()
-        assert len(items) == 3 and items[1] == "+=", (
-            "Unexpected input line [%s]" % line
-        )
-        assert items[0] in lists, (
-            "Unexpected configuration variable name " + items[0]
-        )
+        assert len(items) == 3 and items[1] == "+=", f"Unexpected input line [{line}]"
+        assert items[0] in lists, f"Unexpected configuration variable name {items[0]}"
 
         lists[items[0]].append(items[2])
 

@@ -10,15 +10,14 @@ import urllib.request
 def parse_xml(path):
 	file = urllib.request.urlopen(path) if path.startswith("http") else open(path, 'r')
 	with file:
-		tree = etree.parse(file)
-		return tree
+		return etree.parse(file)
 
 def patch_file(path, blocks):
 	result = []
 	block = None
 
 	with open(path, 'r') as file:
-		for line in file.readlines():
+		for line in file:
 			if block:
 				if line == block:
 					result.append(line)
@@ -41,16 +40,20 @@ def patch_file(path, blocks):
 def is_descendant_type(types, name, base):
 	if name == base:
 		return True
-	type = types.get(name)
-	if not type:
+	if type := types.get(name):
+		return (
+			any(
+				is_descendant_type(types, parent, base)
+				for parent in parents.split(',')
+			)
+			if (parents := type.get('parent'))
+			else False
+		)
+	else:
 		return False
-	parents = type.get('parent')
-	if not parents:
-		return False
-	return any([is_descendant_type(types, parent, base) for parent in parents.split(',')])
 
 def defined(key):
-	return 'defined(' + key + ')'
+	return f'defined({key})'
 
 if __name__ == "__main__":
 	specpath = "https://raw.githubusercontent.com/KhronosGroup/Vulkan-Docs/main/xml/vk.xml"
@@ -62,10 +65,8 @@ if __name__ == "__main__":
 
 	block_keys = ('DEVICE_TABLE', 'PROTOTYPES_H', 'PROTOTYPES_C', 'LOAD_LOADER', 'LOAD_INSTANCE', 'LOAD_DEVICE', 'LOAD_DEVICE_TABLE')
 
-	blocks = {}
-
 	version = spec.find('types/type[name="VK_HEADER_VERSION"]')
-	blocks['VERSION'] = version.find('name').tail.strip() + '\n'
+	blocks = {'VERSION': version.find('name').tail.strip() + '\n'}
 	blocks['VERSION_DEFINE'] = '#define VOLK_HEADER_VERSION ' + version.find('name').tail.strip() + '\n'
 
 	command_groups = OrderedDict()
@@ -103,10 +104,10 @@ if __name__ == "__main__":
 	for (group, cmdnames) in command_groups.items():
 		command_groups[group] = [name for name in cmdnames if len(commands_to_groups[name]) == 1]
 
-	for (name, groups) in commands_to_groups.items():
+	for name, groups in commands_to_groups.items():
 		if len(groups) == 1:
 			continue
-		key = ' || '.join(['(' + g + ')' for g in groups])
+		key = ' || '.join([f'({g})' for g in groups])
 		command_groups.setdefault(key, []).append(name)
 
 	commands = {}
@@ -124,15 +125,14 @@ if __name__ == "__main__":
 	types = {}
 
 	for type in spec.findall('types/type'):
-		name = type.findtext('name')
-		if name:
+		if name := type.findtext('name'):
 			types[name] = type
 
 	for key in block_keys:
 		blocks[key] = ''
 
-	for (group, cmdnames) in command_groups.items():
-		ifdef = '#if ' + group + '\n'
+	for group, cmdnames in command_groups.items():
+		ifdef = f'#if {group}' + '\n'
 
 		for key in block_keys:
 			blocks[key] += ifdef
@@ -141,11 +141,11 @@ if __name__ == "__main__":
 			cmd = commands[name]
 			type = cmd.findtext('param[1]/type')
 
-			if name == 'vkGetInstanceProcAddr':
-				type = ''
 			if name == 'vkGetDeviceProcAddr':
 				type = 'VkInstance'
 
+			elif name == 'vkGetInstanceProcAddr':
+				type = ''
 			if is_descendant_type(types, type, 'VkDevice') and name not in instance_commands:
 				blocks['LOAD_DEVICE'] += '\t' + name + ' = (PFN_' + name + ')load(context, "' + name + '");\n'
 				blocks['DEVICE_TABLE'] += '\tPFN_' + name + ' ' + name + ';\n'
@@ -155,14 +155,14 @@ if __name__ == "__main__":
 			elif type != '':
 				blocks['LOAD_LOADER'] += '\t' + name + ' = (PFN_' + name + ')load(context, "' + name + '");\n'
 
-			blocks['PROTOTYPES_H'] += 'extern PFN_' + name + ' ' + name + ';\n'
-			blocks['PROTOTYPES_C'] += 'PFN_' + name + ' ' + name + ';\n'
+			blocks['PROTOTYPES_H'] += f'extern PFN_{name} {name}' + ';\n'
+			blocks['PROTOTYPES_C'] += f'PFN_{name} {name}' + ';\n'
 
 		for key in block_keys:
 			if blocks[key].endswith(ifdef):
 				blocks[key] = blocks[key][:-len(ifdef)]
 			else:
-				blocks[key] += '#endif /* ' + group + ' */\n'
+				blocks[key] += f'#endif /* {group}' + ' */\n'
 
 	patch_file('volk.h', blocks)
 	patch_file('volk.c', blocks)

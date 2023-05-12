@@ -140,8 +140,7 @@ def download_file(url: str, expected_digest: Optional[bytes] = None):
         digest = digest_data(r.content)
         if digest != expected_digest:
             raise ValueError(
-                "%s has invalid digest %s (expected %s)"
-                % (url, digest.hex(), expected_digest.hex())
+                f"{url} has invalid digest {digest.hex()} (expected {expected_digest.hex()})"
             )
 
     return content
@@ -173,8 +172,7 @@ def extract_file_from_zip_archive(
         digest = digest_data(archive.open(filepath).read())
         if digest != expected_digest:
             raise ValueError(
-                "%s in zip archive at %s has invalid digest %s (expected %s)"
-                % (filepath, archive_name, digest.hex(), expected_digest.hex())
+                f"{filepath} in zip archive at {archive_name} has invalid digest {digest.hex()} (expected {expected_digest.hex()})"
             )
     return file.read()
 
@@ -259,7 +257,7 @@ def download_and_install_item(
         return result
 
     else:
-        raise ValueError("Unknown download item schema: %s" % item)
+        raise ValueError(f"Unknown download item schema: {item}")
 
 
 def main():
@@ -281,7 +279,7 @@ def main():
     parser.add_argument(
         "--install-dir",
         default=install_dir,
-        help="Specify installation directory [%s]" % install_dir,
+        help=f"Specify installation directory [{install_dir}]",
     )
 
     args = parser.parse_args()
@@ -290,8 +288,7 @@ def main():
         for install_name, status in download_and_install_item(
             item, args.install_dir, args.force
         ):
-            print("%s %s" % (install_name,
-                             "INSTALLED" if status else "UP-TO-DATE"))
+            print(f'{install_name} {"INSTALLED" if status else "UP-TO-DATE"}')
 
     return 0
 

@@ -44,21 +44,18 @@ def parse_freetype_header(header):
 
     for line in header.splitlines():
         line = line.rstrip()
-        m = RE_MAJOR.match(line)
-        if m:
-            assert major == None, "FREETYPE_MAJOR appears more than once!"
+        if m := RE_MAJOR.match(line):
+            assert major is None, "FREETYPE_MAJOR appears more than once!"
             major = m.group(1)
             continue
 
-        m = RE_MINOR.match(line)
-        if m:
-            assert minor == None, "FREETYPE_MINOR appears more than once!"
+        if m := RE_MINOR.match(line):
+            assert minor is None, "FREETYPE_MINOR appears more than once!"
             minor = m.group(1)
             continue
 
-        m = RE_PATCH.match(line)
-        if m:
-            assert patch == None, "FREETYPE_PATCH appears more than once!"
+        if m := RE_PATCH.match(line):
+            assert patch is None, "FREETYPE_PATCH appears more than once!"
             patch = m.group(1)
             continue
 

@@ -52,11 +52,9 @@ def main():
 
     args = parser.parse_args()
 
-    common_options = set(args.enable) & set(args.disable)
-    if common_options:
+    if common_options := set(args.enable) & set(args.disable):
         parser.error(
-            "Options cannot be both enabled and disabled: %s"
-            % sorted(common_options)
+            f"Options cannot be both enabled and disabled: {sorted(common_options)}"
         )
         return 1
 
@@ -87,9 +85,9 @@ def main():
 
         options_seen.add(option_name)
         if option_enabled and option_name in args.disable:
-            line = "#undef " + option_name
+            line = f"#undef {option_name}"
         elif not option_enabled and option_name in args.enable:
-            line = "#define " + option_name
+            line = f"#define {option_name}"
         new_lines.append(line)
 
     result = "\n".join(new_lines) + "\n"

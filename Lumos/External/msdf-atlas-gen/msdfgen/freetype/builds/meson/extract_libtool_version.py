@@ -40,9 +40,8 @@ def parse_configure_raw(header):
 
     for line in header.splitlines():
         line = line.rstrip()
-        m = RE_VERSION_INFO.match(line)
-        if m:
-            assert major == None, "version_info appears more than once!"
+        if m := RE_VERSION_INFO.match(line):
+            assert major is None, "version_info appears more than once!"
             major = m.group(1)
             minor = m.group(2)
             patch = m.group(3)

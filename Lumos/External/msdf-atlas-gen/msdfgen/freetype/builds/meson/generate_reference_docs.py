@@ -61,18 +61,16 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
     else:
-        assert os.path.isdir(args.output_dir), (
-            "Not a directory: " + args.output_dir
-        )
+        assert os.path.isdir(args.output_dir), f"Not a directory: {args.output_dir}"
 
     cmds = [
         sys.executable,
         "-m",
         "docwriter",
         "--prefix=ft2",
-        "--title=FreeType-" + args.version,
+        f"--title=FreeType-{args.version}",
         "--site=reference",
-        "--output=" + args.output_dir,
+        f"--output={args.output_dir}",
     ] + all_headers
 
     print("Running docwriter...")
